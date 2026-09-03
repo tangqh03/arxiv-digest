@@ -150,7 +150,7 @@ def test_daily_pipeline_offline(tmp_path):
 
     sender = FeishuDelivery(
         webhook_url="https://open.feishu.test/hook/offline",
-        max_papers_per_message=3,
+        max_papers_per_message=1,
         receipt_root=memory / "delivery",
         transport=httpx.MockTransport(feishu_handler),
     )
@@ -213,7 +213,7 @@ def test_daily_pipeline_offline(tmp_path):
     assert len(list((memory / "deep_summaries").glob("*.json"))) == 5
     assert len(list((memory / "fulltext").glob("*/paper.md"))) == 5
     assert (memory / "delivery" / "2026-09-03" / "feishu.json").exists()
-    assert feishu_http_calls == 3
+    assert feishu_http_calls == 7
     payload_text = json.dumps(sender.last_payloads, ensure_ascii=False)
     assert "Paper A" in payload_text
     assert "Paper C" not in payload_text
@@ -228,7 +228,7 @@ def test_daily_pipeline_offline(tmp_path):
     assert pipeline.deep_summarizer.cache_hits == 5
     assert pdf_calls["2609.00007"] == 1
     assert run2.delivery.skipped is True
-    assert feishu_http_calls == 3
+    assert feishu_http_calls == 7
     run_record = json.loads(run2.run_path.read_text(encoding="utf-8"))
     assert run_record["llm"]["screen_calls"] == 0
     assert run_record["llm"]["screen_cache_hits"] == 7

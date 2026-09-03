@@ -88,15 +88,17 @@ def test_feishu_card_contains_links(tmp_path):
     assert "https://huggingface.co/papers/2609.00001" in payload_text(payloads[1])
 
 
-def test_feishu_chunks_by_paper(tmp_path):
-    payloads = delivery(tmp_path, max_papers_per_message=2).build_payloads(
+def test_feishu_sends_each_paper_in_its_own_card(tmp_path):
+    payloads = delivery(tmp_path).build_payloads(
         date="2026-09-03", papers=[paper(i) for i in range(1, 6)], stats=stats(5)
     )
 
-    assert len(payloads) == 4  # overview plus three paper groups
+    assert len(payloads) == 6  # overview plus one card per paper
     assert "Paper 1" in payload_text(payloads[1])
-    assert "Paper 3" in payload_text(payloads[2])
-    assert "Paper 5" in payload_text(payloads[3])
+    assert "Paper 2" not in payload_text(payloads[1])
+    assert "Paper 2" in payload_text(payloads[2])
+    assert "Paper 5" in payload_text(payloads[5])
+    assert payloads[1]["card"]["header"]["title"]["content"] == "Paper 1"
 
 
 def test_feishu_does_not_split_single_paper_midway(tmp_path):

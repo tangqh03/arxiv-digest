@@ -59,7 +59,7 @@ def main():
             delivery = FeishuDelivery(
                 webhook_url=webhook,
                 secret=os.environ.get("FEISHU_WEBHOOK_SECRET") or None,
-                max_papers_per_message=feishu_config.get("max_papers_per_message", 3),
+                max_papers_per_message=feishu_config.get("max_papers_per_message", 1),
             )
         else:
             delivery = FeishuDelivery.from_env(feishu_config)

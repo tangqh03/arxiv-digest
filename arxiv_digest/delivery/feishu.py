@@ -40,7 +40,7 @@ class FeishuDelivery:
         *,
         webhook_url: str,
         secret: str | None = None,
-        max_papers_per_message: int = 3,
+        max_papers_per_message: int = 1,
         receipt_root: Path = DEFAULT_RECEIPT_ROOT,
         transport: httpx.BaseTransport | None = None,
     ):
@@ -59,7 +59,7 @@ class FeishuDelivery:
         return cls(
             webhook_url=os.environ.get("FEISHU_WEBHOOK_URL", ""),
             secret=os.environ.get("FEISHU_WEBHOOK_SECRET") or None,
-            max_papers_per_message=settings.get("max_papers_per_message", 3),
+            max_papers_per_message=settings.get("max_papers_per_message", 1),
             **kwargs,
         )
 
@@ -96,7 +96,8 @@ class FeishuDelivery:
         for start in range(0, len(ranked), self.max_papers_per_message):
             group = ranked[start : start + self.max_papers_per_message]
             content = "\n\n---\n\n".join(_paper_card_text(paper) for paper in group)
-            payloads.append(_card(f"论文详情 {start + 1}-{start + len(group)}", content))
+            title = group[0].title if len(group) == 1 else f"论文详情 {start + 1}-{start + len(group)}"
+            payloads.append(_card(title, content))
         return payloads
 
     def send(

@@ -65,3 +65,13 @@ def test_daily_workflow_uses_secrets_and_persistent_receipts():
     assert "memory/deep_summaries" in workflow
     assert "memory/fulltext" in workflow
     assert "memory/delivery" in workflow
+
+
+def test_project_feishu_config_uses_one_card_per_paper():
+    import json
+
+    preferences = json.loads(
+        (ROOT / "config" / "preferences.json").read_text(encoding="utf-8")
+    )
+
+    assert preferences["delivery"]["feishu"]["max_papers_per_message"] == 1

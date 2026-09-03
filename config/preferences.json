@@ -52,7 +52,7 @@
     "feishu": {
       "enabled": false,
       "format": "interactive_card",
-      "max_papers_per_message": 3
+      "max_papers_per_message": 1
     }
   },
   "cron": {

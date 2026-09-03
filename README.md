@@ -75,7 +75,7 @@ export FEISHU_WEBHOOK_URL="..."
 export FEISHU_WEBHOOK_SECRET="..."  # optional
 ```
 
-在 `config/preferences.json` 中将 `delivery.feishu.enabled` 改为 `true`，即可让默认 daily run 推送。系统按论文边界生成 interactive cards，并用 digest hash receipt 防止 cron 重跑造成重复消息。
+在 `config/preferences.json` 中将 `delivery.feishu.enabled` 改为 `true`，即可让默认 daily run 推送。系统先发送一张今日概览卡片，再为每篇论文单独发送一张 interactive card，不会把多篇论文合并在同一张卡片中；digest hash receipt 会防止 cron 重跑造成重复消息。
 
 ## Run locally
 
