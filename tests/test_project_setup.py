@@ -51,6 +51,8 @@ def test_daily_workflow_runs_at_utc_plus_8_ten_am():
     assert "--deliver feishu" in workflow
     assert "default: false" in workflow
     assert "args+=(--dry-run)" in workflow
+    assert "MANUAL_FORCE_DELIVERY" in workflow
+    assert "args+=(--force-delivery)" in workflow
 
 
 def test_daily_workflow_uses_secrets_and_persistent_receipts():
