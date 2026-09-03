@@ -43,9 +43,9 @@ jobs:
       FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
       FEISHU_WEBHOOK_SECRET: ${{ secrets.FEISHU_WEBHOOK_SECRET }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
@@ -60,7 +60,7 @@ jobs:
         run: echo "value=$(date +%F)" >> "$GITHUB_OUTPUT"
 
       - name: Restore caches and delivery receipts
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             memory/analysis
@@ -101,7 +101,7 @@ jobs:
 
       - name: Upload digest and run report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: daily-digest-${{ steps.digest-date.outputs.value }}
           if-no-files-found: warn
