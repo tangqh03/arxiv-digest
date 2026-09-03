@@ -1,123 +1,251 @@
 # arxiv-digest
 
-每日 arXiv 论文日报生成器。自动聚合关注领域 + 跨领域热门 + HuggingFace Daily Papers，通过 LLM 智能 rerank 生成结构化中文日报。
+基于 Hugging Face Daily Papers 的个性化中文论文日报系统。系统先做本地关键词预筛选，再用 OpenAI-compatible LLM 判断真实相关性并翻译 abstract；只对 Top-K 高相关论文获取全文和生成深度解读，最后保存 Markdown，并可选择推送飞书。
 
-## 功能
+旧的 `scripts/generate_digest.py` 三源工作流仍然保留。
 
-- **三源并行**：arXiv 关键词搜索 + alphaxiv 跨领域热门 + HuggingFace Daily Papers
-- **LLM 逐篇评估**：relevance × 2 + novelty + impact 综合评分，中文摘要 + 点评
-- **自动过滤**：综合评分 < 6.0 的论文自动剔除
-- **重复高亮**：连续多次被推荐的论文自动标记 🔥🔥
-- **外部热度信号**：HackerNews 讨论度（🔥HN pts/cmt）
-- **论文上下文对话**：日报后追问某篇论文，自动识别并加载完整上下文
-- **增量收集 + 重试**：arXiv API 429 时保存已成功的进度，稍后补全
-- **QQBot 定时推送**：每日 04:00（Asia/Shanghai）自动推送
+## Installation
 
-## 快速开始
+项目使用 [uv](https://docs.astral.sh/uv/) 管理 Python 环境：
 
 ```bash
-cd skills/arxiv-digest
-
-# 第1步：收集原始数据
-python3 scripts/generate_digest.py --raw
-
-# 第2步：LLM 逐篇评估（写入 memory/llm_scores.json）
-# 在当前 session 中逐篇评估论文
-
-# 第3步：生成最终日报
-python3 scripts/generate_digest.py --rerank-json memory/llm_scores.json --output memory/daily_digest.md
+uv sync --dev
+uv run pytest -q
 ```
 
-## 自动化（cron）
+支持 Python 3.11 及以上版本。
 
-已配置每日 **04:00（Asia/Shanghai）** 自动执行完整流程并推送到 QQBot。
+## Configure topics
 
-如需立即触发测试：
-```bash
-openclaw cron run arxiv-digest-daily
-```
-
-如需手动补发日报：
-```bash
-bash scripts/resend_daily_digest.sh [YYYY-MM-DD]
-```
-
-## 配置
-
-### 关注领域 — `config/topics.json`
+编辑 `config/topics.json`：
 
 ```json
 {
-  "topics": ["LLM post-training", "agentic RL", "LLM agent"],
-  "per_topic_count": 5
+  "topics": [
+    {
+      "name": "Video Reasoning",
+      "keywords": [
+        "video reasoning",
+        "video understanding",
+        "temporal reasoning"
+      ]
+    },
+    {
+      "name": "Multimodal Agents",
+      "keywords": [
+        "multimodal agent",
+        "vision-language agent"
+      ]
+    }
+  ],
+  "exclude_keywords": []
 }
 ```
 
-### 推荐风格 — `config/preferences.json`
+旧格式 `{"topics": ["LLM agent", "RLHF"]}` 仍然支持。过滤器检查 title、abstract、HF summary 和 HF keywords，并归一化大小写、空格和短横线。可在 `config/preferences.json` 中设置 `keyword_filter.enabled=false` 暂停预筛选。
 
-```json
-{
-  "summary": {
-    "max_length": 800,
-    "include_full_abstract": true,
-    "include_author_list": true,
-    "highlight_repeated": true,
-    "repeated_threshold": 2
-  },
-  "cross_domain": {
-    "enabled": true,
-    "max_papers": 5,
-    "source": "alphaxiv-trending",
-    "label": "🔥 跨领域热门"
-  },
-  "huggingface": {
-    "enabled": true,
-    "max_papers": 5,
-    "label": "🤗 HuggingFace Daily"
-  },
-  "llm_rerank": {
-    "enabled": true,
-    "top_k": 10,
-    "score_threshold": 7,
-    "filter_threshold": 6.0,
-    "filter_low_score": true
-  }
-}
+## Configure LLM
+
+复制 `.env.example` 中的变量并在 shell 或 secret manager 中设置：
+
+```bash
+export SCREENING_LLM_BASE_URL="https://openrouter.ai/api/v1"
+export SCREENING_LLM_API_KEY="..."
+export SCREENING_LLM_MODEL="openai/gpt-5-nano"
+
+export DEEP_LLM_BASE_URL="https://openrouter.ai/api/v1"
+export DEEP_LLM_API_KEY="..."
+export DEEP_LLM_MODEL="google/gemini-3.8-flash"
 ```
 
-## 目录结构
+screening 模型负责 relevance、novelty、impact、abstract 翻译和 TL;DR；deep 模型只处理 Top-K 全文总结。两端接口都需兼容 OpenAI `/chat/completions`。如果未配置带前缀的新变量，系统会回退到旧的 `LLM_BASE_URL/LLM_API_KEY/LLM_MODEL` 单模型配置。API key 只能来自环境变量；不要把 `.env` 或真实 secret commit 到仓库。
 
-```
-skills/arxiv-digest/
-├── config/                 # 用户配置
-├── scripts/                # 核心脚本
-│   ├── generate_digest.py  # 日报生成主脚本
-│   ├── heat_signals.py     # 外部热度信号收集
-│   ├── search_papers.py    # 论文语义检索
-│   └── resend_daily_digest.sh  # 手动补发
-├── memory/                 # 运行时数据
-│   ├── digests/            # 按日期保存的日报
-│   ├── papers/             # 单篇论文档案
-│   └── llm_scores.json     # LLM 评估结果
-└── docs/                   # 设计文档与审计报告
+## Configure Feishu
+
+用户侧配置步骤：
+
+```text
+飞书群 → 群设置 → 机器人 → 添加机器人 → 自定义机器人 → 获取 Webhook
 ```
 
-## 数据源与排序依据
+如果开启了签名校验，同时保存机器人 secret：
 
-| 板块 | 来源 | 排序依据 | 代表什么 |
-|------|------|----------|----------|
-| 📌 关注领域 | arXiv API 关键词搜索 | `submittedDate` 降序 | 你指定的领域最新论文 |
-| 🔥 跨领域热门 | alphaxiv.org 首页抓取 | alphaxiv 内部热度算法 | 全 AI 领域社区讨论度最高的论文 |
-| 🤗 HuggingFace Daily | huggingface.co/papers | 社区 curated | HuggingFace 社区每日精选 |
+```bash
+export FEISHU_WEBHOOK_URL="..."
+export FEISHU_WEBHOOK_SECRET="..."  # optional
+```
 
-## 扩展方向（TODO）
+在 `config/preferences.json` 中将 `delivery.feishu.enabled` 改为 `true`，即可让默认 daily run 推送。系统按论文边界生成 interactive cards，并用 digest hash receipt 防止 cron 重跑造成重复消息。
 
-- [ ] Semantic Scholar 引用增速（需 API key）
-- [ ] Reddit / X(Twitter) 讨论度
-- [ ] 支持按 arXiv category（cs.AI, cs.CL, cs.LG）订阅
-- [ ] 论文 PDF 自动下载 + 关键图表提取
-- [ ] 用户反馈收集（QQBot 回复解析、emoji 反馈）
-- [ ] 个性化 LLM 评估 prompt（基于反馈调优）
+## Run locally
+
+完整默认流程：
+
+```bash
+uv run python scripts/run_daily.py
+```
+
+小规模验证，明确禁止投递：
+
+```bash
+uv run python scripts/run_daily.py \
+  --date today \
+  --max-papers 5 \
+  --deep-top-k 1 \
+  --no-delivery
+```
+
+指定历史日期：
+
+```bash
+uv run python scripts/run_daily.py --date 2026-09-03
+```
+
+## Dry run
+
+`--dry-run` 仍会抓取、筛选、调用 LLM 和生成 Markdown，但只构建飞书 payload，不发送：
+
+```bash
+uv run python scripts/run_daily.py --deliver feishu --dry-run
+```
+
+## Run without delivery
+
+```bash
+uv run python scripts/run_daily.py --no-delivery
+```
+
+## Force cache refresh
+
+```bash
+uv run python scripts/run_daily.py \
+  --force-screening \
+  --force-deep-summary
+```
+
+只有明确需要重复投递时才增加 `--force-delivery`。
+
+## Resend existing digest
+
+重发不会重新调用 HF、arXiv、LLM 或全文总结：
+
+```bash
+uv run python scripts/resend_daily_digest.py \
+  memory/digests/2026-09-03.md \
+  --feishu
+```
+
+如 receipt 已记录相同 digest，默认跳过；使用 `--force` 显式重发。
+
+## Tests
+
+普通测试完全离线，并默认排除 live marker：
+
+```bash
+uv run pytest -q
+uv run pytest -m "not live" -q
+uv run pytest -q tests/e2e/test_daily_pipeline_offline.py -vv
+```
+
+## Live tests
+
+Live tests 必须显式 opt in：
+
+```bash
+uv run pytest -m live tests/live/test_huggingface_live.py -vv
+uv run pytest -m live tests/live/test_fulltext_live.py -vv
+```
+
+真实 LLM 测试仅在三个 `LLM_*` 变量都存在时执行，且只 screening 一篇短样例：
+
+```bash
+uv run pytest -m live tests/live/test_llm_live.py -vv
+```
+
+飞书 live test 只读取 `FEISHU_TEST_WEBHOOK_URL`，绝不使用 production webhook；它发送一条带 `[TEST]` 标题的消息：
+
+```bash
+uv run pytest -m live tests/live/test_feishu_live.py -vv
+```
+
+完整真实 smoke test 应先禁用投递：
+
+```bash
+uv run python scripts/run_daily.py \
+  --date today \
+  --max-papers 5 \
+  --deep-top-k 1 \
+  --no-delivery
+```
+
+确认 `memory/runs/<date>/run.json` 和 `memory/digests/<date>.md` 后，再使用 `--deliver feishu`。
+
+## Scheduled execution
+
+仓库包含 `.github/workflows/daily-digest.yml`，默认每天 **UTC+8 上午 10:00** 自动执行。GitHub Actions cron 使用 UTC，因此配置为：
+
+```yaml
+schedule:
+  - cron: "0 2 * * *"
+```
+
+Scheduled workflow 只从默认分支运行，GitHub 在繁忙时可能延迟几分钟。也可以在 Actions 页面通过 `workflow_dispatch` 手动触发。运行状态缓存会保存 screening、全文、deep summary 和飞书 receipt，手动重跑同一日报不会重复调用 LLM 或重复推送。
+
+如果改用主机 cron：
+
+```bash
+scripts/run_daily.sh --no-delivery
+```
+
+Cron 示例：
+
+```cron
+0 9 * * * /path/to/arxiv-digest/scripts/run_daily.sh
+```
+
+Cron 使用服务器本地时区。请在主机或 crontab 中显式设置 `TZ`；系统不会假定服务器位于 Asia/Shanghai 或 Asia/Singapore。还需确保 cron 环境能找到 `uv` 和所需的环境变量。
+
+## Directory structure
+
+```text
+arxiv_digest/                 核心模块
+  sources/                    HF Daily 和 arXiv metadata
+  llm/                        client、screening、deep summary
+  fulltext/                   HF/HTML/PDF reader
+  rendering/                  Markdown digest
+  delivery/                   Feishu webhook
+scripts/run_daily.py          新 daily CLI
+scripts/generate_digest.py    保留的 legacy CLI
+tests/e2e/                    完全离线端到端测试
+tests/live/                   opt-in 真实服务测试
+memory/analysis/              screening cache
+memory/fulltext/              PDF 与正文 cache
+memory/deep_summaries/        deep summary cache
+memory/digests/               Markdown 日报
+memory/runs/                  每次运行报告
+memory/delivery/              防重复投递 receipt
+```
+
+## Failure recovery
+
+- HF source 完全失败：本次 run 失败，不生成伪造日报。
+- 单篇 arXiv enrichment 失败：保留 HF metadata。
+- 单篇 screening 失败：记录 error，继续其他论文。
+- 全文失败：保留中文 abstract/TL;DR，不进行 deep summary。
+- deep summary 失败：使用 compact summary，不中止日报。
+- 飞书失败：本地 digest 已先保存，可使用 resend 命令补发。
+- 重复运行：有效 screening、fulltext 和 deep-summary cache 会被复用；相同 digest 不会重复推送。
+
+## Legacy commands
+
+以下接口继续可用：
+
+```bash
+uv run python scripts/generate_digest.py --raw
+uv run python scripts/generate_digest.py \
+  --rerank-json memory/llm_scores.json \
+  --output memory/daily_digest.md
+```
 
 ## License
 

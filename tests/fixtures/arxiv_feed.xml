@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:arxiv="http://arxiv.org/schemas/atom">
+  <entry>
+    <id>https://arxiv.org/abs/2609.00003v2</id>
+    <updated>2026-09-03T12:00:00Z</updated>
+    <published>2026-09-02T12:00:00Z</published>
+    <title>Third Paper Enriched</title>
+    <summary>Full arXiv abstract for the third paper.</summary>
+    <author><name>ArXiv Author</name></author>
+    <category term="cs.AI" />
+    <link href="https://arxiv.org/abs/2609.00003v2" rel="alternate" type="text/html" />
+    <link href="https://arxiv.org/pdf/2609.00003v2" rel="related" type="application/pdf" />
+  </entry>
+</feed>

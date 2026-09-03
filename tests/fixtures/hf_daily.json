@@ -1,0 +1,32 @@
+[
+  {
+    "id": "2609.00003",
+    "title": "Third Paper",
+    "summary": "Abstract for the third paper.",
+    "authors": [{"name": "Third Author"}],
+    "publishedAt": "2026-09-03T08:00:00Z",
+    "upvotes": 30,
+    "aiSummary": "HF summary for the third paper.",
+    "aiKeywords": ["agents", "reasoning"],
+    "projectPage": "https://example.com/third",
+    "githubRepo": "https://github.com/example/third"
+  },
+  {
+    "id": "2609.00001",
+    "title": "First Paper",
+    "summary": "Abstract for the first paper.",
+    "authors": [{"name": "First Author"}],
+    "publishedAt": "2026-09-03T07:00:00Z",
+    "upvotes": 10,
+    "aiSummary": "HF summary for the first paper.",
+    "aiKeywords": ["multimodal"]
+  },
+  {
+    "id": "2609.00002",
+    "title": "Second Paper",
+    "summary": "Abstract for the second paper.",
+    "authors": [{"name": "Second Author"}],
+    "publishedAt": "2026-09-03T06:00:00Z",
+    "upvotes": 20
+  }
+]

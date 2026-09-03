@@ -1,0 +1,10 @@
+{
+  "relevance": 9,
+  "novelty": 7,
+  "impact": 8,
+  "matched_topic": "Video Reasoning",
+  "relevance_reason": "论文直接研究长视频中的时间推理。",
+  "abstract_zh": "本文提出 VideoReasoner，用于长视频时间推理。",
+  "tldr_zh": "问题：长视频中的时间证据容易丢失。\n核心点：VideoReasoner 使用分层时间建模组织跨片段证据。\n意义：该方法提升长视频推理的可靠性，值得关注。",
+  "worth_deep_reading": true
+}

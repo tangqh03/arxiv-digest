@@ -4,8 +4,19 @@ memory/llm_scores.json
 memory/daily_digest.md
 memory/digests/*.md
 memory/recommended_history.json
+memory/analysis/
+memory/deep_summaries/
+memory/delivery/
+memory/fulltext/
+memory/runs/
 
 # Proxy setup is environment-specific
 PROXY_SETUP.md
 *.pyc
 __pycache__/
+.venv/
+*.egg-info/
+.pytest_cache/
+.env
+.env.*
+!.env.example

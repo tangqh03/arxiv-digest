@@ -1,13 +1,7 @@
 {
   "topics": [
-    "LLM post-training",
-    "agentic RL",
-    "LLM agent",
-    "reinforcement learning reasoning",
-    "RLHF",
-    "DPO",
-    "test-time compute",
-    "self-play LLM"
+    "agent", "harness", "self-evolving", "agentic RL"
   ],
+  "exclude_keywords": [],
   "per_topic_count": 5
 }
